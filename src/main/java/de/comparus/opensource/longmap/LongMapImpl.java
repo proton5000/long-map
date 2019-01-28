@@ -4,67 +4,47 @@ import java.util.Arrays;
 
 public class LongMapImpl<V> implements LongMap<V> {
 
-    private Node<V>[] longTable;
-
     private int size = 0;
     private int DEFAULT_CAPACITY = 16;
     @SuppressWarnings("unchecked")
-    private Node<V>[] values = new Node[DEFAULT_CAPACITY];
+    private Node<V>[] table = new Node[DEFAULT_CAPACITY];
 
     public V put(long key, V value) {
-        boolean insert = true;
-        for (int i = 0; i < size; i++) {
-            if (values[i].getKey() == key) {
-                values[i].setValue(value);
-                insert = false;
-            }
-        }
+        Integer index = hash(key);
 
-        if (insert) {
-            ensureCapa();
-            values[size++] = new Node<V>(key, value);
-        }
-
+        Node<V> node = new Node<>(key, value);
+        ensureCapacity();
+        table[index] = node;
+        size++;
         return value;
     }
 
-    private void ensureCapa() {
-        if (size == DEFAULT_CAPACITY) {
-            int newSize = values.length * 2;
-            values = Arrays.copyOf(values, newSize);
-        }
+    private Integer hash(long key) {
+        return (Long.hashCode(key) & 0x7FFFFFFF) % table.length;
     }
 
-    private void condenseArray(int start) {
-        for (int i = start; i < size; i++) {
-            values[i] = values[i + 1];
+    private void ensureCapacity() {
+        if (size == table.length) {
+            int newSize = table.length * 2;
+            table = Arrays.copyOf(table, newSize);
         }
     }
 
     public V get(long key) {
-        for (int i = 0; i < size; i++) {
-            if (values[i] != null) {
-                if (values[i].getKey() == key) {
-                    return values[i].getValue();
-                }
-            }
-        }
-
-        return null;
+        Node<V> node;
+        return (node = table[hash(key)]) == null ? null : node.value;
     }
 
     public V remove(long key) {
-        for (int i = 0; i < size; i++) {
-            if (key == values[i].getKey()) {
-                V elem = values[i].getValue();
-                values[i] = null;
-                size--;
-                condenseArray(i);
-                return elem;
-            }
+        Node<V> node;
+        int index = hash(key);
+        if ((node = table[index]) != null) {
+            table[index] = null;
+            size--;
+            return node.value;
+        } else {
+            return null;
         }
-
-        return null;
     }
 
     public boolean isEmpty() {
@@ -72,41 +52,43 @@ public class LongMapImpl<V> implements LongMap<V> {
     }
 
     public boolean containsKey(long key) {
-        for (int i = 0; i < size; i++) {
-            if (key == values[i].getKey()) {
-                return true;
-            }
-        }
-
-        return false;
+        return table[hash(key)] != null;
     }
 
     public boolean containsValue(V value) {
-        for (int i = 0; i < size; i++) {
-            if (value.equals(values[i].getValue())) {
-                return true;
+        if (size > 0) {
+            for (Node<V> node : table) {
+                if (node != null) {
+                    V nodeValue = node.value;
+                    if (nodeValue == value || value != null && value.equals(nodeValue)) {
+                        return true;
+                    }
+                }
             }
         }
-
         return false;
     }
 
     public long[] keys() {
-        long[] arr = new long[size];
-        for (int i = 0; i < size; i++) {
-            arr[i] = (values[i].getKey());
+        long[] keys = new long[size];
+        int count = 0;
+        for (Node<V> node : table) {
+            if (node != null) {
+                keys[count++] = node.key;
+            }
         }
-
-        return arr;
+        return keys;
     }
 
     public V[] values() {
-        V[] arr = (V[]) new Object[size];
-        for (int i = 0; i < size; i++) {
-            arr[i] = (values[i].getValue());
+        V[] values = (V[]) new Object[size];
+        int count = 0;
+        for (Node<V> node : table) {
+            if (node != null) {
+                values[count++] = node.value;
+            }
         }
-
-        return arr;
+        return values;
     }
 
     public long size() {
@@ -116,8 +98,8 @@ public class LongMapImpl<V> implements LongMap<V> {
     public void clear() {
         if (size > 0) {
             size = 0;
-            for (int i = 0; i < size; ++i)
-                values[i] = null;
+            for (int i = 0; i < table.length; ++i)
+                table[i] = null;
         }
     }
 }
