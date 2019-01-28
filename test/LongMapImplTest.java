@@ -101,4 +101,13 @@ public class LongMapImplTest {
         assertEquals(testLongMap.values().length, 0);
         assertEquals(testLongMap.keys().length, 0);
     }
+
+    @org.junit.Test
+    public void autoSizing() {
+        LongMap testLongMap = new LongMapImpl<Integer>();
+        for (int i = 0; i < 30; i++) {
+            testLongMap.put(i, Math.random());
+        }
+        assertEquals(testLongMap.size(), 30);
+    }
 }
