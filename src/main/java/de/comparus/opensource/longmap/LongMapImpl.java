@@ -26,7 +26,12 @@ public class LongMapImpl<V> implements LongMap<V> {
     private void ensureCapacity() {
         if (size == table.length) {
             int newSize = table.length * 2;
-            table = Arrays.copyOf(table, newSize);
+            Node<V>[] tmp = Arrays.copyOf(table, table.length);
+            table = new Node[newSize];
+            size = 0;
+            for ( Node<V>node : tmp ) {
+                put(node.key, node.value);
+            }
         }
     }
 
